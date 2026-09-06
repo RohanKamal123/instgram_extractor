@@ -38,7 +38,9 @@ Status: Accepted
 
 The application must not collect or store the user's Instagram password.
 
-The user logs into Instagram manually in the browser profile used by the agent.
+The user logs into Instagram manually in their normal Chrome/appropriate persistent browser session.
+
+Authentication state must never be logged or committed.
 
 ---
 
@@ -52,7 +54,19 @@ The system should also support Reels sent to other accessible DM conversations.
 
 ---
 
-## D005 — Transcript is first-class data
+## D005 — Source identity is explicitly selected and locked
+
+Status: Accepted
+
+At the beginning of a processing session, ask the user for the Instagram username/identity from which Reels should be extracted.
+
+The system must verify the identity and lock the selected source for that session.
+
+If the identity is missing or ambiguous, ask the user instead of guessing.
+
+---
+
+## D006 — Transcript is first-class data
 
 Status: Accepted
 
@@ -66,23 +80,23 @@ Timestamped segments should be retained when possible.
 
 ---
 
-## D006 — Multimodal processing
+## D007 — Multimodal processing
 
 Status: Accepted
 
 Speech alone is insufficient.
 
-The system should eventually combine:
+The system should combine, when useful:
 
 - audio/transcript
-- captions
+- captions/subtitles
 - OCR
 - visual information
 - metadata
 
 ---
 
-## D007 — DeepSeek initially
+## D008 — DeepSeek initially
 
 Status: Accepted
 
@@ -92,7 +106,7 @@ The AI layer must remain provider-independent.
 
 ---
 
-## D008 — Local Whisper
+## D009 — Local Whisper
 
 Status: Accepted
 
@@ -102,7 +116,7 @@ This reduces API costs and keeps processing under the user's control.
 
 ---
 
-## D009 — Preserve raw data separately
+## D010 — Preserve raw data separately
 
 Status: Accepted
 
@@ -110,9 +124,11 @@ Original extracted information must remain separate from AI-generated analysis.
 
 AI analysis can be regenerated.
 
+User answers and corrections must remain durable across analysis regeneration.
+
 ---
 
-## D010 — Configurable media retention
+## D011 — Configurable media retention
 
 Status: Accepted
 
@@ -122,7 +138,7 @@ Temporary processing is preferable for large files unless the user chooses to pr
 
 ---
 
-## D011 — Three retrieval modes
+## D012 — Three retrieval modes
 
 Status: Accepted
 
@@ -130,16 +146,90 @@ The system should eventually provide:
 
 - keyword search
 - semantic search
-- conversational querying
+- conversational/RAG querying
+
+RAG retrieves from the structured knowledge base; users do not need to attach generated PDFs or export data manually.
 
 ---
 
-## D012 — AI-inferred "why saved"
+## D013 — AI-inferred "why saved"
 
 Status: Accepted
 
-The system cannot know the user's actual reason for saving a Reel.
+The system cannot know the user's actual reason for saving a Reel unless the user states it.
 
 Therefore, it should infer a likely reason and clearly label it as an inference.
 
 The user should be able to correct it.
+
+If the distinction is important and confidence is insufficient, ask the user.
+
+---
+
+## D014 — Human-in-the-loop for important uncertainty
+
+Status: Accepted
+
+The system must not silently guess when important information is missing, contradictory, or materially ambiguous.
+
+Create a user question instead.
+
+Questions should include the relevant Reel URL and evidence/context. MCQ/options should be preferred when appropriate to minimize user effort.
+
+User answers are first-class durable knowledge.
+
+---
+
+## D015 — Continuous resumable processing
+
+Status: Accepted
+
+The extractor is a continuous worker, not merely a one-shot script.
+
+It must persist processing state, support retries, avoid unnecessary duplicate processing, survive interruption, and resume after user answers.
+
+---
+
+## D016 — Live operational UI
+
+Status: Accepted
+
+The user must have a clear UI showing what the agent is doing, including selected source, current Reel, current stage, progress, failures, and pending questions.
+
+The UI should make waiting states understandable.
+
+---
+
+## D017 — Reports are outputs, not memory
+
+Status: Accepted
+
+After extraction, the system should generate a detailed human-readable PDF and useful summaries/visualizations based on the actual archive.
+
+The report must avoid generic AI filler and should be deliberately designed for human reading.
+
+The knowledge base remains the canonical source for future search and RAG.
+
+---
+
+## D018 — Windows + Trae as primary development environment
+
+Status: Accepted
+
+The project is primarily developed on Windows using Trae as the coding agent.
+
+GitHub is the canonical source repository.
+
+The VPS is runtime/deployment infrastructure, not the primary development workstation.
+
+Local development is preferred where practical, especially for browser automation and interactive authentication.
+
+---
+
+## D019 — No social actions
+
+Status: Accepted
+
+The browser agent is an observation/extraction system.
+
+It must not like, comment, follow/unfollow, message, react, post, or otherwise engage socially on the user's behalf.
