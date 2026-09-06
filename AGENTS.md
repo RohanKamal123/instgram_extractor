@@ -6,47 +6,72 @@ You are the primary engineering agent for this project.
 
 Build, maintain, test, and improve a personal AI system that automatically processes Instagram Reels from the user's accessible Instagram DMs and turns them into structured, searchable personal knowledge.
 
-## User
+## Product Scope
 
-The system is for one person only: the owner of this project.
+This is a personal-only system for one owner. Do not build multi-user SaaS functionality unless explicitly requested.
 
-Do not build multi-user SaaS functionality unless explicitly requested.
+The core workflow is:
 
-The user's primary workflow is:
+1. The user normally uses Instagram and sends interesting Reels to their own Instagram account/self-DM.
+2. The user opens their normal Chrome/Instagram session and starts the extractor from a terminal.
+3. The system asks which Instagram account/identity should be used as the Reel source.
+4. It finds and locks onto that account/conversation when found.
+5. The agent continuously discovers and processes relevant Reels.
+6. The user sees clear live progress and what the agent is doing.
+7. When important information is missing or ambiguous and cannot be reliably determined, the system asks the user instead of guessing.
+8. Questions appear in a clear human-in-the-loop queue, preferably as MCQ when appropriate, with the relevant Reel URL and evidence/context.
+9. After the user answers, processing resumes automatically.
+10. When extraction is complete, the system generates a detailed, human-readable report PDF plus useful summaries and visualizations.
+11. The structured knowledge base remains the source for later search and RAG-based conversational retrieval; reports are output artifacts, not the primary memory store.
 
-1. Find an interesting Reel on Instagram.
-2. Send/share it to their own Instagram account/self-DM.
-3. Forget about it.
-4. The system processes it automatically.
-5. Later, the user can search, understand, and retrieve what they saved.
+The fundamental problem is that manually reopening each Reel and taking notes is difficult and time-consuming.
 
-The fundamental problem is that manually opening each Reel and taking notes is too difficult and time-consuming.
+## Development Environment
+
+The primary development environment is Windows.
+
+The primary coding agent is Trae.
+
+GitHub is the canonical source of truth for the source repository.
+
+The VPS is runtime/deployment infrastructure, not the primary development workstation.
+
+Local development should be preferred when it is sufficient, especially for browser automation, manual Instagram authentication, UI development, and tests.
+
+See DEVELOPMENT.md for the detailed environment model.
 
 ## Instagram Access
 
-The user will manually log into Instagram in the browser.
+The user manually logs into Instagram in their normal Chrome browser/session before starting the extractor.
 
-The agent may then operate the already-authenticated browser session.
+The system may operate the already-authenticated browser session/profile.
 
-Do not ask the user for their Instagram password.
+Never ask the user for or store their Instagram password.
 
-Do not store Instagram credentials.
+Do not expose browser cookies, session tokens, or authentication state in logs, UI, commits, or reports.
 
 Use browser automation rather than depending on an Instagram API as the primary ingestion mechanism.
 
-Playwright/Chromium is the preferred initial approach unless a better technical solution is demonstrated.
+Playwright/Chromium is the preferred automation technology unless a better solution is demonstrated.
 
-The system must not perform social actions such as:
+The browser agent is for observation, navigation, and extraction only. It must not perform social actions such as:
 
 - liking
 - commenting
 - following/unfollowing
 - sending messages
 - reacting to messages
+- posting content
 
-The browser agent's job is primarily observation, extraction, and navigation.
+## Source Account Selection
 
-## Content Scope
+At the beginning of an ingestion session, the system should ask the user for the Instagram username/identity from which Reels should be extracted.
+
+The system must verify that the requested identity/conversation is found before proceeding.
+
+Once found, the selected source should be locked for that processing session so the agent does not silently switch to another identity.
+
+If the account cannot be found or the identity is ambiguous, ask the user rather than guessing.
 
 Primary source:
 
@@ -56,7 +81,49 @@ Also support:
 
 - Reels sent to other Instagram accounts/conversations accessible through the authenticated browser session.
 
-The system should eventually be able to identify Reel messages regardless of which accessible DM conversation contains them.
+## Continuous Processing
+
+The extractor is a long-running, resumable worker rather than a one-shot script.
+
+Processing must persist state so interruption, restart, or browser failure does not cause completed Reels to be lost or unnecessarily reprocessed.
+
+The UI must make the current state visible, including at minimum:
+
+- current session
+- selected account/conversation
+- current Reel
+- current processing stage
+- completed/remaining counts when known
+- failures/retries
+- questions waiting for the user
+
+The system should pause only the work that genuinely requires user input and resume after an answer whenever possible.
+
+## Human-in-the-Loop / Uncertainty
+
+This is a critical product principle:
+
+**AI may propose; it must not silently guess when an important answer is uncertain.**
+
+If required information is missing, contradictory, or materially ambiguous, create a user question rather than inventing an answer.
+
+Questions should:
+
+- explain what is uncertain
+- show the relevant Reel URL
+- provide useful evidence/context
+- use MCQ/options when the ambiguity can be expressed as discrete choices
+- allow a free-text/other response when appropriate
+- record the user's answer as durable knowledge
+- resume processing after the answer
+
+Distinguish clearly between:
+
+- information extracted from the Reel
+- AI interpretation/inference
+- information supplied or corrected by the user
+
+For "why saved", the AI should infer a likely reason but label it as an inference. If confidence is insufficient or the distinction matters, ask the user. User corrections take precedence over AI inference for future retrieval/reporting while preserving the original inference.
 
 ## Transcription
 
@@ -69,13 +136,13 @@ Try extraction in this general order:
 3. Audio extraction.
 4. Local Whisper transcription.
 
-If no transcript exists, generate one.
+If no transcript exists, generate one whenever technically possible.
 
 Preserve timestamps when technically possible.
 
-Record how the transcript was obtained and its confidence/quality where available.
+Record how the transcript was obtained and confidence/quality where available.
 
-Do not silently pretend an inferred transcript is an original transcript.
+Never silently present an inferred/generated transcript as an original Instagram transcript.
 
 ## Multimodal Extraction
 
@@ -88,25 +155,25 @@ A Reel may contain important information in:
 - visual content
 - metadata
 
-Therefore, the processing pipeline should eventually support:
+The pipeline should support:
 
 - speech-to-text
 - OCR
 - caption extraction
 - metadata extraction
-- multimodal analysis
+- visual/multimodal analysis
 
 ## AI Provider
 
-DeepSeek API is available and should be supported as the primary LLM provider initially.
+DeepSeek API is available and should be supported as the initial general-purpose LLM provider.
 
-Design the AI layer so the provider/model can be changed without rewriting the application.
+The AI layer must be provider/model independent so providers can be changed without rewriting the application.
 
-Small/local models should be preferred where they are sufficiently capable, especially for inexpensive preprocessing tasks.
+Small/local models should be preferred where sufficiently capable, especially for inexpensive preprocessing tasks.
 
-Whisper may be run locally.
+Whisper may run locally.
 
-Do not send data to external AI providers unnecessarily.
+Do not send private Reel content to external AI providers unnecessarily.
 
 ## Reel Analysis
 
@@ -114,11 +181,11 @@ For every processed Reel, attempt to produce:
 
 - title
 - summary
-- transcript
+- transcript reference
 - key points
 - topics
 - categories
-- why the user may have saved it
+- likely reason saved
 - tools mentioned
 - products mentioned
 - people mentioned
@@ -131,45 +198,50 @@ For every processed Reel, attempt to produce:
 - related concepts
 - related Reels
 
-The AI must distinguish between facts extracted from the Reel and its own interpretation.
+The AI must distinguish extracted facts from interpretation.
 
-For "why saved", the AI should infer rather than claim certainty.
+## Retrieval
 
-Example:
-
-"Likely saved because this demonstrates an interesting autonomous coding workflow."
-
-The user must be able to correct the inference.
-
-## Knowledge Retrieval
-
-The system should eventually support all of:
+The knowledge base should eventually support all of:
 
 1. Keyword search
 2. Semantic search
-3. Conversational querying
+3. Conversational/RAG querying
 
-Examples:
+The conversational layer should retrieve structured source records from the knowledge base rather than requiring the user to attach PDFs or manually provide exported data.
 
-"Find Reels about local LLMs."
+## Reporting
 
-"Find the Reel I saved about an AI coding agent that tests its own code."
+After extraction, generate a detailed human-readable report that is specific to the user's actual archive, not generic AI filler.
 
-"What useful AI tools have I saved but never tried?"
+The report should be designed as a proper document and may include:
 
-"What topics do I repeatedly save?"
+- executive overview
+- collection statistics
+- topic/category distributions
+- important Reels
+- recurring themes
+- tools/products/people/companies
+- resources and URLs
+- action items
+- relationships and clusters
+- forgotten or unresolved content
+- user-provided answers/corrections where useful
+- data visualizations
 
-"Show me Reels related to autonomous software development."
+PDF generation is an output layer. The knowledge base remains the canonical structured memory.
 
 ## Data Principles
 
-Never destroy the original extracted information when generating AI summaries.
+Never destroy original extracted information when generating AI summaries.
 
-Keep raw/archive data separate from the derived intelligence layer.
+Keep raw/archive data separate from derived intelligence.
 
 AI-generated analysis should be regenerable.
 
 A model upgrade should not require re-ingesting Instagram content.
+
+User answers/corrections are first-class data and must not be overwritten by regeneration.
 
 Avoid unnecessary duplication of downloaded media.
 
@@ -185,7 +257,7 @@ Default behavior should avoid unnecessary permanent storage of large media.
 
 The user should be able to preserve important Reels.
 
-The original Reel URL should be retained whenever available.
+Retain the original Reel URL whenever available.
 
 ## Engineering Principles
 
@@ -198,13 +270,16 @@ The original Reel URL should be retained whenever available.
 - Keep documentation synchronized with architectural changes.
 - Never mark functionality complete without testing it.
 - Handle Instagram UI changes defensively.
-- Make processing resumable.
+- Make processing resumable and idempotent.
 - Do not process the same Reel repeatedly unless explicitly requested.
 - Design long-running tasks to survive interruption.
-- Log failures clearly.
+- Log failures clearly without logging secrets or private authentication state.
 - Never delete user data automatically.
 - Never hard-code secrets.
 - Use environment variables for API keys and sensitive configuration.
+- Do not introduce distributed infrastructure merely because it is fashionable.
+- Do not ask the user for routine engineering decisions.
+- Do ask the user when a product requirement, important ambiguity, privacy/security boundary, or other explicitly protected decision requires human judgment.
 
 ## Definition of Done
 
@@ -218,3 +293,5 @@ It is complete when:
 - documentation is updated when necessary
 - the application can actually use the feature
 - existing functionality still works
+- user-facing behavior is clear
+- important uncertainty is handled explicitly rather than silently guessed
