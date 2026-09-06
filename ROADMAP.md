@@ -2,16 +2,16 @@
 
 ## Phase 0 — Project Foundation & Local UX
 
-- [ ] Establish project structure
-- [ ] Configuration management
-- [ ] Local database
-- [ ] Logging with privacy safeguards
-- [ ] Basic interactive web/status interface
-- [ ] Processing state model
-- [ ] Persistent session model
-- [ ] Basic question/answer state model
-- [ ] Tests
-- [ ] Local runnable developer workflow on Windows
+- [x] Establish project structure
+- [x] Configuration management
+- [x] Local database
+- [x] Logging with privacy safeguards
+- [x] Basic interactive web/status interface
+- [x] Processing state model
+- [x] Persistent session model
+- [x] Basic question/answer state model
+- [x] Tests
+- [x] Local runnable developer workflow on Windows
 
 ## Phase 1 — Instagram Browser Ingestion
 

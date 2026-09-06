@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Reel Archivist — Status</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #262a33;
+    --text: #e6e8ec;
+    --muted: #8a90a0;
+    --accent: #7aa2ff;
+    --ok: #4ade80;
+    --warn: #f59e0b;
+    --bad: #ef4444;
+    --pending: #60a5fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    line-height: 1.45;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.2px; }
+  header .phase {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+  }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card h3 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .big { font-size: 28px; font-weight: 700; }
+  .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .panel h2 { margin: 0 0 14px 0; font-size: 14px; font-weight: 600; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 120px 1fr; row-gap: 8px; font-size: 13px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; word-break: break-all; }
+  .pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    background: transparent;
+  }
+  .pill.starting  { color: var(--muted); }
+  .pill.running, .pill.processing { color: var(--pending); border-color: #2b3d6a; }
+  .pill.waiting_for_user { color: var(--warn); border-color: #6e4e0a; }
+  .pill.completed, .pill.processed { color: var(--ok); border-color: #1f5336; }
+  .pill.failed { color: var(--bad); border-color: #5e1f22; }
+  .pill.queued, .pill.pending { color: var(--muted); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .question {
+    border: 1px solid #4b3b10;
+    background: rgba(245,158,11,0.05);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .question:last-child { margin-bottom: 0; }
+  .question .title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .question .meta { font-size: 11px; color: var(--muted); }
+  .question .reason { font-size: 12px; color: var(--muted); margin: 6px 0; }
+  .note {
+    margin-top: 28px;
+    padding: 12px 16px;
+    background: #171a21;
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  footer {
+    margin-top: 40px;
+    color: var(--muted);
+    font-size: 11px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Reel Archivist · Control Panel</h1>
+  <span class="phase">Phase {{ s.phase }} · {{ s.session.status if s.session else 'idle' }}</span>
+</header>
+
+<section class="grid">
+  <div class="card">
+    <h3>Reels discovered</h3>
+    <div class="big">{{ s.progress.reels_total }}</div>
+    <div class="sub">
+      <span style="color:var(--ok)">{{ s.progress.reels_processed }} processed</span> ·
+      <span style="color:var(--pending)">{{ s.progress.reels_processing }} in flight</span> ·
+      <span style="color:var(--bad)">{{ s.progress.reels_failed }} failed</span>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Processing jobs</h3>
+    <div class="big">{{ s.progress.jobs_completed }} / {{ s.progress.jobs_total }}</div>
+    <div class="sub">
+      {{ s.progress.jobs_remaining }} remaining ·
+      {{ s.progress.jobs_failed }} failed ·
+      {{ s.progress.retry_attempts }} retries
+    </div>
+  </div>
+  <div class="card">
+    <h3>Source identity</h3>
+    <div class="big" style="font-size:20px">
+      {% if s.session and s.session.selected_source_identity %}
+        @{{ s.session.selected_source_identity }}
+      {% else %}
+        <span style="color:var(--muted); font-weight:500">not selected</span>
+      {% endif %}
+    </div>
+    <div class="sub">Will be requested at Phase 1 startup</div>
+  </div>
+  <div class="card">
+    <h3>Pending questions</h3>
+    <div class="big" style="color: var(--warn) if s.pending_questions else 'var(--ok)';">{{ s.pending_questions | length }}</div>
+    <div class="sub">Awaiting user input (Human-in-the-Loop)</div>
+  </div>
+</section>
+
+<section class="row">
+  <div class="panel">
+    <h2>Current Reel</h2>
+    {% if s.current_reel %}
+      <dl class="kv">
+        <dt>Reel URL</dt>
+        <dd><a href="{{ s.current_reel.reel_url }}" target="_blank" rel="noopener">{{ s.current_reel.reel_url }}</a></dd>
+        <dt>Stage</dt>
+        <dd><span class="pill {{ s.current_reel.current_stage or s.current_reel.processing_status }}">{{ s.current_reel.current_stage or s.current_reel.processing_status }}</span></dd>
+        <dt>Reel status</dt>
+        <dd><span class="pill {{ s.current_reel.processing_status }}">{{ s.current_reel.processing_status }}</span></dd>
+        <dt>Reel id</dt>
+        <dd style="color:var(--muted); font-family:ui-monospace, monospace;">{{ s.current_reel.id }}</dd>
+      </dl>
+    {% else %}
+      <p style="color:var(--muted); font-size:13px;">No Reel currently being processed.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>Session</h2>
+    {% if s.session %}
+      <dl class="kv">
+        <dt>Session id</dt>
+        <dd style="font-family:ui-monospace, monospace; color:var(--muted);">{{ s.session.id }}</dd>
+        <dt>Status</dt>
+        <dd><span class="pill {{ s.session.status }}">{{ s.session.status }}</span></dd>
+        <dt>Started at</dt>
+        <dd style="color:var(--muted); font-size:12px;">{{ s.session.started_at[:19] }} UTC</dd>
+      </dl>
+    {% else %}
+      <p style="color:var(--muted); font-size:13px;">No active session.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Human-in-the-Loop · Pending Questions</h2>
+  {% if s.pending_questions %}
+    {% for q in s.pending_questions %}
+      <div class="question">
+        <div class="title"><span class="pill {{ q.question_type }}">{{ q.question_type }}</span> &nbsp; {{ q.question }}</div>
+        {% if q.reason %}<div class="reason">Why: {{ q.reason }}</div>{% endif %}
+        <div class="meta">
+          Reel: <a href="{{ q.reel_url }}" target="_blank" rel="noopener">{{ q.reel_url }}</a>
+          · Question id <code style="color:var(--muted)">{{ q.id }}</code>
+          · Created {{ q.created_at[:19] }} UTC
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p style="color:var(--muted); font-size:13px;">No questions waiting. All important uncertainties resolved.</p>
+  {% endif %}
+</section>
+
+<div class="note">
+  <strong>Phase 0 status:</strong> {{ s.phase_note }}<br/>
+  Status view polls from <code>/api/status</code>. Open the JSON endpoint for the raw payload.
+</div>
+
+<footer>
+  <span>reel-archivist v0.1.0 · Phase 0</span>
+  <span>Generated {{ s.generated_at[:19] }} UTC</span>
+</footer>
+
+</body>
+</html>
